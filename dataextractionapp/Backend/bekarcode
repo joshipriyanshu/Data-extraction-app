@@ -1,0 +1,30 @@
+//app.post("/upload", upload.single("files"), async (req, res) => {
+//   if (!req.file) {
+//     console.log("No file received from client.");
+//     return res.status(400).json({ message: "No file uploaded." });
+//   }
+
+//   try {
+//     const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY); // ✅ FIXED
+//     const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" }); // ✅ FIXED
+
+//     const contents = [
+//       {
+//         inlineData: {
+//           mimeType: req.file.mimetype,
+//           data: fs.readFileSync(req.file.path, { encoding: "base64" }),
+//         },
+//       },
+//       { text: "Explain this image." },
+//     ];
+
+//     const result = await model.generateContent({ contents });
+//     const response =  result.response;
+//     const text = response.text();
+
+//     res.json({ message: text });
+//   } catch (error) {
+//     console.error("Upload or AI processing failed:", error);
+//     res.status(500).json({ message: "AI processing failed.", error: error.message });
+//   }
+// });
