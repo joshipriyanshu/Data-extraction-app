@@ -7,7 +7,7 @@ import axios from 'axios';
 
 
 // Main App component to demonstrate FileInput
-const App = () => { 
+const Uploadsection = () => { 
 
   const [selectedFile, setSelectedFile] = useState(null); // State to hold the selected file
 
@@ -204,4 +204,4 @@ const App = () => {
   
 
 
-export default App; // Exporting App as default for Canvas
+export default Uploadsection; 
