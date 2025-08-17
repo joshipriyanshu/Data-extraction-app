@@ -5,7 +5,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const mongoose = require("mongoose");
-const Invoice = require("./models/users"); // Import Invoice model
+const Invoice = require("./Models/users"); // Import Invoice model
 
 dotenv.config();
 
