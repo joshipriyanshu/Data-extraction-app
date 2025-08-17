@@ -26,7 +26,7 @@ const Uploadsection = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/test-upload",
+        "https://data-extraction-app.onrender.com/test-upload",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
