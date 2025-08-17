@@ -9,7 +9,7 @@ const Invoice = require("./Models/users"); // Import Invoice model
 
 dotenv.config();
 
-const mongoURL = "mongodb://127.0.0.1:27017/newgeminiappdb";
+const mongoURL = "mongodb+srv://priyanshujoshi2020:Priyanshu@cluster0.xf8hm0p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 mongoose
   .connect(mongoURL)

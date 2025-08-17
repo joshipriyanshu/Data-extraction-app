@@ -6,12 +6,12 @@ function App() {
   return (
     <>
       <Navbar/>
-   
+    
        <Outlet/>
       
     </>  
   
   );
-}
+}ss
 
 export default App;
