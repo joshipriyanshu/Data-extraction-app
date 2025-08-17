@@ -8,7 +8,7 @@ const Alternateapp = () => { // Correctly defined as a functional component
   const handleFileChange = (file) => {
     if (file) {
       console.log('File selected:', file.name, file);
-      // You can lift this file state up to a parent component if needed
+      
     } else {
       console.log('No file selected or file cleared.');
     }
@@ -38,7 +38,7 @@ const FileInput = ({ onFileChange }) => {
   const [uploadError, setUploadError] = useState(''); // State for upload errors
 
   // Backend endpoint URL
-  const backendUrl = 'http://localhost:3000/upload'; // Ensure this matches your backend route
+  const backendUrl = 'http://localhost:3000/test-upload'; // Ensure this matches your backend route
 
   // Handles the change event when a file is selected
   const handleInputChange = (event) => {

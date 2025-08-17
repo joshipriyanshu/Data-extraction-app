@@ -5,119 +5,179 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const mongoose = require("mongoose");
-const user = require("./Models/users"); // Import the user model
-const { emit } = require("process");
-
-const mongoURL =  'mongodb://127.0.0.1:27017/newgeminiappdb'
-
-mongoose.connect(mongoURL)
-.then(() => {
-  console.log("Connected to MongoDB"); } 
-).catch((error) => {
-  console.error("Error connecting to MongoDB:", error);
-});
+const Invoice = require("./models/users"); // Import Invoice model
 
 dotenv.config();
+
+const mongoURL = "mongodb://127.0.0.1:27017/newgeminiappdb";
+
+mongoose
+  .connect(mongoURL)
+  .then(() => {
+    console.log("✅ Connected to MongoDB");
+  })
+  .catch((error) => {
+    console.error("❌ Error connecting to MongoDB:", error);
+  });
 
 const app = express();
 const port = 3000;
 
 app.use(cors());
 
-
+// Multer config
 const upload = multer({ dest: "uploads/" });
 
+// 🔹 Utility to safely parse numbers
+const parseNumber = (val) => {
+  if (!val) return null;
+  if (typeof val === "number") return val;
+  return parseFloat(String(val).replace(/,/g, "").replace(/[^\d.]/g, ""));
+};
 
 app.get("/", (req, res) => {
   res.send("Hello World! This is the backend server.");
 });
 
-app.post("/upload", upload.single("files"), async (req, res) => {  
-  if (!req.file) {  
-    console.log("No file received from client.");
+app.post("/test-upload", upload.single("file"), async (req, res) => {
+  if (!req.file) {
     return res.status(400).json({ message: "No file uploaded." });
   }
+
   try {
-    const ai = new GoogleGenerativeAI('AIzaSyD9IKqazh0KVED1s1kPuGQcQ4d9OIo1NDo'); // ✅ FIXED
-    const model = ai.getGenerativeModel({ model: "gemini-2.5-flash",
-
+    const ai = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    const model = ai.getGenerativeModel({
+      model: "gemini-2.5-flash",
       generationConfig: {
-      responseMimeType: 'application/json',
-      responseSchema: { // Define your expected JSON schema here
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          email: { type: 'string' },
-          mobile: { type: 'number'},
-          workExperience: { type: 'string' }, 
-          address: { type: 'string' } // Optional field 
-        },
-        required: ['name', 'email', 'mobile']
-      }
-    },
-
-
-     }); // ✅ FIXED
-        
-    
+        responseMimeType: "application/json",
+      },
+    });
 
     const contents = [
   {
-    parts: [ 
+    role: "user",
+    parts: [
       {
         inlineData: {
           mimeType: req.file.mimetype,
           data: fs.readFileSync(req.file.path, { encoding: "base64" }),
         },
       },
-      { text: "Please get the name, mobile and email, address from the given file and also find the latest job profile." },
+      {
+        text: `Extract the following details from the document. Return the data in a single JSON object.
+        - invoiceNumber: (string)
+        - invoiceDate: (string, format DD/MM/YYYY)
+        - City: (string)
+        - customer:
+          - name: (string)
+          - address: (string)
+          - mobile: (string)
+        - itemDetails: (array of objects)
+          - each item should have 'description' (string), 'quantity' (number), 'unitPrice' (number), and 'total' (number)
+        - total: (number)
+        - tax: (object with CGST, SGST, and totalTax, all as numbers)
+        - bankDetails: (object with bankName, accountNumber, and ifscCode, all as strings)
+        - CGST_percentage: (string)
+        - SGST_percentage: (string)
+
+        Return only the JSON object, do not include any other text or markdown.`
+      },
     ],
   },
 ];
 
+
+    // 🔹 Call Gemini
     const result = await model.generateContent({ contents });
-    console.log("AI processing result:", result);
-    const response =  result.response;
-    const text = response.text();
+    const text = result.response.text();
+
     let extractedData;
-    try{
-      extractedData= JSON.parse(text); // Parse the JSON response} 
-      console.log("successfully parsed JSON:", extractedData);
-    } catch (error) { ("error parsing JSON:", error);
-      return res.status(500).json({ message: "Error parsing AI response.", error: error.message });
-    } 
-    // Save user data to MongoDB
-    const userData = new user({ 
-      name: extractedData.name ,
-      email: extractedData.email ,
-      mobile: extractedData .mobile ,
-      workExperience: extractedData.workExperience || "Not provided", // Optional field
-      address: extractedData.address || "Not provided", // Optional field
+    try {
+      extractedData = JSON.parse(text);
+    } catch (err) {
+      console.error("❌ Error parsing JSON:", err);
+      return res.status(500).json({
+        message: "AI returned invalid JSON.",
+        raw: text,
+      });
+    }
 
-    })
+    // Clean tax values safely
+    let taxToSave = extractedData.tax;
+    if (taxToSave && typeof taxToSave === "object") {
+      ["IGST", "CGST", "SGST"].forEach((key) => {
+        if (taxToSave[key]) {
+          taxToSave[key] = parseNumber(taxToSave[key]); // cleaned
+        }
+      });
+    } else {
+      taxToSave = undefined;
+    }
 
-    await userData.save();
-    console.log("User data saved to MongoDB:", userData);
+    // ✅ Save to MongoDB using Invoice schema
+    const invoiceData = new Invoice({
+      invoiceNumber: extractedData.invoiceNumber || "Not provided",
+      invoiceDate: extractedData.invoiceDate || "Not provided",
+      placeOfSupply: extractedData.placeOfSupply || "Not provided",
+      city: extractedData.city || "Not provided",
 
-    // <--- End of Mongodb save -->
+      customer: {
+        name: extractedData.customer?.name || "Not provided",
+        phone: extractedData.customer?.mobile || "Not provided",
+        email: extractedData.customer?.email || null,
+        address: extractedData.customer?.address || "Not provided",
+      },
 
-    res.json({ message: "data extracted successfully", name: extractedData.name, email: extractedData.email, mobile: extractedData.mobile });
+      seller: {
+        gstin: extractedData.seller?.gstin || null,
+        companyName: extractedData.seller?.companyName || null,
+        companyAddress: extractedData.seller?.companyAddress || null,
+        mobile: extractedData.seller?.mobile || null,
+        email: extractedData.seller?.email || null,
+      },
+
+      items: extractedData.itemDetails || [],
+
+      tax: taxToSave,
+
+      totals: {
+        totalAmount: parseNumber(extractedData.total), // cleaned
+        amountInWords: extractedData.amountInWords || null,
+        balanceDue: parseNumber(extractedData.balanceDue), // cleaned
+      },
+
+      bankDetails: extractedData.bankDetails || {},
+
+      notes: extractedData.notes || null,
+      terms: extractedData.terms || null,
+    });
+
+    await invoiceData.save();
+    console.log("✅ Invoice saved to MongoDB:", invoiceData);
+
+    return res.json({ success: true, data: invoiceData });
   } catch (error) {
-    console.error("Upload or AI processing failed:", error);
-    res.status(500).json({ message: "AI processing failed.", error: error.message });
+    console.error("❌ Error during AI model processing:", error);
+    return res.status(500).json({
+      message: "AI model processing failed.",
+      error: error.message,
+    });
   }
+});
 
-
- })
-
- 
- //  List of users
-app.get("/users", async (req, res) => { 
-  userData = await user.find({});
-  res.json(userData); })
+// List of users (invoices)
+app.get("/users", async (req, res) => {
+  try {
+    const invoices = await Invoice.find({}); // use the Invoice model
+    res.json(invoices);
+  } catch (err) {
+    console.error("❌ Error fetching invoices:", err);
+    res.status(500).json({ message: "Error fetching invoices." });
+  }
+});
 
 
 
 app.listen(port, () => {
-  console.log(`App listening on port ${port}`);
+  console.log(`🚀 App listening on port ${port}`);
 });

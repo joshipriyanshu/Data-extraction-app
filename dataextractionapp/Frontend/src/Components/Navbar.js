@@ -1,51 +1,42 @@
-import React from 'react';
-import { Link } from 'react-router-dom'; // Import Link from react-router-dom
-import Uploadsection from './Input';
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
 
 const Navbar = () => {
+  const location = useLocation();
+
+  const navItems = [
+    { name: "Upload Invoice", path: "/" },
+    { name: "Product Info", path: "/productinfopage" },
+    { name: "Invoice Info", path: "/Invoice" },
+    { name: "Customer Info", path: "/Customer" },
+  ];
+
   return (
-    <nav className="bg-gradient-to-r from-blue-600 to-purple-700 text-white p-4 shadow-lg">
-      <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center">
-        <div className="text-2xl sm:text-3xl font-bold tracking-wide mb-2 sm:mb-0">
-          Welcome to the <span className="text-yellow-300">Data Extraction App</span>
+    <nav className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-lg">
+      <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center px-6 py-4">
+        <div className="text-2xl font-extrabold tracking-wide mb-3 sm:mb-0">
+          <span className="text-yellow-300">Data Extraction</span> App
         </div>
+
         <div className="flex space-x-4">
-          {/* Product Page Button */}
-          <Link
-            to="/productinfopage" // Use Link to navigate
-            className="px-6 py-2 rounded-full font-semibold text-white bg-blue-500 hover:bg-blue-600
-                       transition-all duration-300 ease-in-out transform hover:scale-105
-                       focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-75 shadow-md
-                       flex items-center justify-center" // Added flex for consistent button styling
-          >
-            Product Page
-          </Link>
-
-          {/* Invoice Info Button */}
-          <Link
-            to="/Invoice" // Use Link to navigate
-            className="px-6 py-2 rounded-full font-semibold text-white bg-purple-500 hover:bg-purple-600
-                       transition-all duration-300 ease-in-out transform hover:scale-105
-                       focus:outline-none focus:ring-2 focus:ring-purple-300 focus:ring-opacity-75 shadow-md
-                       flex items-center justify-center" // Added flex for consistent button styling
-          >
-            Invoice Info
-          </Link>
-
-          <Link
-            to="/Uploadsection" // Use Link to navigate
-            className="px-6 py-2 rounded-full font-semibold text-white bg-purple-500 hover:bg-purple-600
-                       transition-all duration-300 ease-in-out transform hover:scale-105
-                       focus:outline-none focus:ring-2 focus:ring-purple-300 focus:ring-opacity-75 shadow-md
-                       flex items-center justify-center" // Added flex for consistent button styling
-          >
-            Upload File  
-          </Link>
+          {navItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`px-5 py-2 rounded-full font-medium transition-all duration-300 ease-in-out transform hover:scale-105 
+                ${
+                  location.pathname === item.path
+                    ? "bg-yellow-400 text-gray-900 shadow-lg"
+                    : "bg-white/20 hover:bg-white/30"
+                }`}
+            >
+              {item.name}
+            </Link>
+          ))}
         </div>
       </div>
-      
     </nav>
   );
-}
+};
 
 export default Navbar;
